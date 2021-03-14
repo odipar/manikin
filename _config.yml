@@ -1,3 +1,4 @@
 theme: jekyll-theme-slate
 title: Manikin
 description: A blog
+baseurl: /manikin
