@@ -40,7 +40,7 @@ I'm not the only one who has a problem with mutable state:
 
 * And of course Bitcoin's Blockchain, but I'm not going to spend any energy on that. 
 
-*Manikin* - a new framework that I've been developing for the past 3 years - is another attempt that's more sympathetic 
+[Manikin](https://github.com/odipar/jmanikin) - a new framework that I've been developing for the past 3 years - is another attempt that's more sympathetic 
 to version control. I will discuss this 'version control' approach in more detail in separate future posts, because 
 I think that's probably the most interesting capability of Manikin.
 
@@ -124,7 +124,9 @@ To accommodate for Worlds, we also define the following 'Wordly' transition func
 ```scala
 type AccountId = Id[Account]
 
-def transition[O](w: World, id: Id[O])(tr: O => O): World = w.put(id, tr(w.get(id)))
+def transition[O](w: World, id: Id[O])(tr: O => O): World = {
+  w.put(id, tr(w.get(id)))
+}
 
 def depositInWorld(w: World, id: AccountId, amt: Double): World = {
   transition(w, id)(ac => deposit(ac, amt))
@@ -204,7 +206,9 @@ class Environment1 {
   private var world: World = _
   
   def get(id: Id[O]) = world.get(id)
-  def transition[O](id: Id[O])(tr: O => O) = world = world.set(id, tr(world.get(id))) 
+  def transition[O](id: Id[O])(tr: O => O) = {
+    world = world.set(id, tr(world.get(id)))
+  } 
 }
 
 def transfer(e: Environment, tid: TransferId): Unit = {
@@ -423,7 +427,8 @@ case class Withdraw(amt: Double) extends AccountMsg {
     pst { obj.balance = old.balance - amt}
 } 
 
-case class Book(from: AccountId, to: AccountId, amt: Double) extends TransferMsg {
+case class Book(from: AccountId, to: AccountId, amt: Double) extends TransferMsg 
+{
   def local =
     pre { !obj.done }.
     app { obj.copy(done = true) }.
