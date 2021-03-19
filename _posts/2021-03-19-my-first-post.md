@@ -328,7 +328,7 @@ Post-conditions are also more likely to be found in formal languages, such as th
 So why are post-conditions not more widely used? 
 
 I think the most important reason is that post-conditions are difficult to implement on top of mutable state, where 
-history is destroyed. To get an idea of how difficult it is to implement post-conditions I refer to
+history is destroyed. To get an idea of how difficult it is to 'mount' post-conditions on top 'regular' Scala code, I refer to
 [Extensible Code Contracts for Scala](https://ethz.ch/content/dam/ethz/special-interest/infk/chair-program-method/pm/documents/Education/Theses/Rokas_Matulis_MA_report.pdf).
 
 But why do post-conditions need history? Because a post-condition can refer to stuff *after* a state transition
