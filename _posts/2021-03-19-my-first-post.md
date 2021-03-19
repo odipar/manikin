@@ -44,7 +44,7 @@ I'm not the only one who has a problem with mutable state:
 to version control. I will discuss this 'version control' approach in more detail in separate future posts, because 
 I think that's probably the most interesting capability of Manikin.
 
-Before we dive into versions, let us first start with a couple of definitions and then slowly build towards 
+But before we dive into versions, let us first start with a couple of definitions and then slowly build towards 
 the design and semantics of Manikin.
 
 #### Pure Objects
