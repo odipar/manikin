@@ -444,7 +444,7 @@ Also take a note on the post conditions, especially the Book post condition. The
 
 How cool is that?                                                                                 
           
-#### Alternatives
+#### Alternative Syntax
 But why do we need a builder to implement the four stages of a Message? Can't we  just implement them with ordinary 
 methods?
 
@@ -469,7 +469,7 @@ class Deposit implements AccountMsg {
   @Override public pst { return () -> obj().balance == old().balance + amount; }
 }
 ```
-#### Alternative Worlds
+#### Many Worlds
 Now that we have all the pieces of the puzzle in place, we can finally leverage the real value that Manikin brings:
 the alternative Worlds that can be *dynamically* applied at runtime for all kinds of interesting (infrastructural) 
 behaviour. 
@@ -486,7 +486,7 @@ And most importantly, behaviour that is *independent* of our business logic, for
 I've already tried out all these use-cases without needing to change a single line of business logic. 
 Of course, only the business logic that was built 'the Manikin way'.
 #### Final Example
-We didn't entirely finish our simple 'Bank' example. So for completeness’s sake I'm filling in the missing bits in the
+We didn't entirely finish our 'Accountants' example. So for completeness’s sake I'm filling in the missing bits in the
 final example that ends this post. 
 
 In my next posts I'm going to explain in more detail how we can use Manikin to implement Version Control,
