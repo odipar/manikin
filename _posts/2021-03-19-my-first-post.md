@@ -1,5 +1,6 @@
 ---
 layout: post
+author: Robbert van Dalen
 title: "An introduction"
 ---
 
@@ -9,7 +10,7 @@ identity and a well-defined lifecycle.
 That is why I prefer Scala, a programming language that elegantly marries both FP and Object Orientation.
 
 #### Place Oriented Programming
-However, there is one thing I dislike, and that's *shared* mutable state (and boilerplate!).
+However, there are two things I dislike, and that's *shared mutable state* and *boilerplate*.
 Most OO programs mutate state *in place* and that always gives me a lot of headaches.
 
 I'm not the only one who has a problem with mutable state:
@@ -19,7 +20,8 @@ I'm not the only one who has a problem with mutable state:
 > Accountants don't use erasers; otherwise they may go to jail. All entries in a ledger remain in the ledger.
 
 * Rich Hickey calls it PLace Oriented Programming ([PLOP](http://www.infoq.com/presentations/Value-Values)).
-  Rick's solution to managing state is via Software Transactional Memory (STM), or by employing a database called 
+  Rich's solution to managing state is via Software Transactional Memory 
+  ([STM](https://en.wikipedia.org/wiki/Software_transactional_memory)), or by employing a database called 
   [Datomic](https://www.datomic.com).
   
 * On the front-end side, they also came to the conclusion that immutability gives you real benefits: 
@@ -30,17 +32,17 @@ I'm not the only one who has a problem with mutable state:
   [more](https://github.com/markerikson/redux-ecosystem-links/blob/master/immutable-data.md#immutable-update-utilities).
   
 * On the back-end side, [Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) has been the most prominent
-  approach to control state, based on append-only streams of immutable events.
-  Another notable example is [Akka](https://akka.io) which is both an Actor framework and an event sourcing framework.
+  approach to immutable state, based on append-only streams of immutable events.
+  Another notable example is [Akka](https://akka.io) which is both an Actor framework and an Event Sourcing framework.
   
 * Early me with [Enchilada](http://www.enchiladacode.nl) and [Spread](https://github.com/odipar/spread) where I 
   experimented with *extreme* immutability.
 
-* And of course Bitcoin's Blockchain, but I'm not going to spend any more energy on that. 
+* And of course Bitcoin's Blockchain, but I'm not going to spend any energy on that. 
 
 *Manikin* - a new framework that I've been developing for the past 3 years - is another attempt that's more sympathetic 
-to version control. I will discuss this 'version control' approach in more detail in future posts, because that's
-probably the most interesting bit of Manikin.
+to version control. I will discuss this 'version control' approach in more detail in separate future posts, because 
+I think that's probably the most interesting capability of Manikin.
 
 Before we dive into versions, let us first start with a couple of definitions and then slowly build towards 
 the design and semantics of Manikin.
@@ -68,7 +70,8 @@ type PureObject[O] = (Id[O], O)
 ```
 #### Transitions
 Now that Pure Objects are defined to be immutable, can we also do something useful with them?
-The key is that we always create *new* immutable states: state is explicitly *transitioned* from old to new.
+
+Yes we can, and the key is that we always create *new* immutable states: state is explicitly *transitioned* from old to new.
 
 To stay with the *Accountants don't use erasers* example, here is an Account state transition system:
 ```scala
@@ -96,7 +99,7 @@ but we can achieve more or less the same result with [Project Lombok](https://pr
 or with the newfangled Java 16 [Records](https://openjdk.java.net/jeps/395).
 
 #### Worlds
-Now that we can map old states to new states, we also have to manage the mapping between identifiers and 
+Now that we can transition old states to new states, we also have to manage the mapping between identifiers and 
 states somewhere.
 
 Normally we would use ordinary JVM references for that, as references are (mutable!) memory locations that 
@@ -160,8 +163,8 @@ But most importantly, the resulting code looks awful: probably nobody would like
 #### Monads
 Enter monads! Yeah, you've probably heard about them. The monad is *the* most important FP construct to
 [*exactly*](https://www.microsoft.com/en-us/research/wp-content/uploads/1993/01/imperative.pdf) solve this problem.
-It is interesting to see how the monadic approach can reduce the boilerplate significantly
-(don't worry, you don't have to understand monads or apply them in Manikin).
+It is interesting to see how the monadic approach can reduce boilerplate significantly
+(but don't worry, you don't have to understand monads or apply them in Manikin).
                
 When we write our transfer method 'in' the monad `W`, it would look something like this:
 ```scala
@@ -184,16 +187,16 @@ The important point to take home is that, with monads, we don't have to directly
 We could even decide to mutate the (hidden) World in place, exactly like how the IO monad does it (but we won't!)
 
 The issue with monads is that they are not well-supported in Java (as it lacks Scala's syntactic flatMap support). 
-Even with support, they still add syntactic noise to code, for example when lifting values in and out of a monad.
+Even with support, they add syntactic noise to code, for example when lifting values in and out of a monad.
 Monads also tend to '[color](http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/)' 
 the type signatures of your methods and functions, making them more complicated.
 
-Lack of support and syntactic noise are the reasons why I've decided *against* monads
-and come up with an alternative solution that's more or less the *inverse* of a monad.
+Lack of support and syntactic noise are the most important reasons why I've decided *against* monads.
+Instead, I've come up with an alternative solution that's more or less the *inverse* of a monad.
 
 #### Environments
-Like in the monadic case, we don't deal with Worlds directly, as we encapsulate them into mutable `Environment`s.
-Although Environments introduce a bit of mutation, we *gain* ordinary imperative code. 
+Like in the monadic case, we don't want to deal with Worlds directly, so we encapsulate them into a mutable
+`Environment`. Although Environments introduce a bit of mutation, we *gain* ordinary imperative code. 
 
 Environments hide immutable Worlds, but they do dispatch all Wordly matters to them, like this:
 ```scala
@@ -216,12 +219,12 @@ def transfer(e: Environment, tid: TransferId): Unit = {
 ```
 
 But there is one big caveat with this approach: Environments cannot be shared across different threads.
-They should also not 'escape' the (thread) 'context' where they are used.
+They should also not 'escape' the (thread) 'context' where they are used, or bad things will happen.
 
-As we will see in later posts, both issues are addressed by Manikin's messaging and concurrency model.
+As I will explain in later posts, both issues are addressed by Manikin's messaging and concurrency model.
 #### Messages
-We've already condensed our Account example into imperative code, while still managing our
-Objects to remain pure. What's still missing in our approach is another important OO concept, and that's behaviour:
+We've already condensed our Account example into imperative code, while keeping our
+Objects to be pure. But what's still missing in our approach is another important OO concept, and that's behaviour:
 
 In Java, you would naturally specify and structure your application with classes and methods, but in Manikin, 
 we've adopted for the `Message` type.
@@ -237,17 +240,17 @@ trait Message1[O, R] {
 case class Deposit1(amt: Double) extends Message1[Account, Unit] {
   def apply(self: Id[Account], env: Environment1) = {
     if (amt <= 0.0) sys.error("amount should be positive")
-    env.transition(self)(ac => ac.copy(balance = ac.balance - amt))
+    env.transition(self)(ac => ac.copy(balance = ac.balance + amt))
   }  
 }
 ```
 This does the job, but we are going to further refactor the Message type in such a way that it also becomes 
 amenable to Event Sourcing (as we will explain later).
 
-Our first refactor is to lift the self parameter into the Environment. We also refactor checks into a separate
-pre-condition and lift the transition function from the Environment into the Message type.
+Our first refactor is to lift the self parameter into the Environment. We then refactor checks into a separate
+pre-condition stage and lift the transition function from the Environment into the Message type.
 
-Next to that, we introduce an additional `effect` stage: this is the stage where we can send Messages to other objects
+Next to that, we introduce an additional `effect` stage: this is the place where we can send Messages to other objects
 and return an (optional) result value `R`.
 
 ```scala
@@ -271,12 +274,13 @@ case class Deposit2(amt: Double) extends Message2[Account, Unit] {
 }
 ```
 #### Local Message
-What's still annoying is that an Environment needs to be passed as a parameter to each stage.
-To remove that, we temporarily store and retrieve the 'current' Environment parameter in a global,
-mutable *ThreadLocal* variable. The result is that a LocalMessage is both a Message *and* an Environment.
+What's annoying is that an Environment has to be passed as a parameter to every stage.
+
+To remove that annoyance, we are going to temporarily store and retrieve the 'current' Environment parameter in a 
+global, mutable *ThreadLocal* variable. The result is that a LocalMessage is both a Message *and* an Environment.
                                                  
-You may feel this 'global variable' solution is bad style. No worries, you are always free to extend Message2 if you
-don't want anything to do with ThreadLocal (at the expense of more boilerplate).
+You may feel this 'global variable' solution is too dirty. No worries, you are always free to extend a 
+regular Message if you don't want anything to do with ThreadLocal (at the expense of more boilerplate).
 
 ```scala
 val tenv = ThreadLocal[_]
@@ -309,29 +313,31 @@ transition is applied.
 But sometimes we also need to check whether a certain conditions holds *after* we do a transition
 (and after Messages have been sent to other objects in the effect stage).
 
-Post-conditions are very useful when you want to make sure that your system is always in consistent, validated and sane
+Post-conditions are very useful when you want to make sure that your system is always in a consistent, validated and sane
 state. 
 
 Unfortunately, there aren't many programming languages out there that have first-class post-conditions.
 The [Eiffel](https://www.eiffel.org/doc/eiffel/Eiffel) programming language was one of the first that included them. Post-conditions can also be found in formal 
 specification languages, such as the Java Modeling Language ([JML](https://en.wikipedia.org/wiki/Java_Modeling_Language)).
 
-So why are post-conditions not more widely used? A big challenge with their implementation is that they can reference 
-state *after* a state transition, but may also reference state *before* a transition: they have access to
-*historical* state.
+So why are post-conditions not more widely used? 
 
-I think to most important reason why post-conditions are difficult to implement on top of mutable state is exactly 
-because history is destroyed.
-Of course, with Manikin we don't have this problem because it is easy to refer to historical states with Worlds.
+I think to most important reason is that post-conditions are difficult to implement on top of mutable state, where 
+history is destroyed. To get an idea of how difficult it is to implement post-conditions I refer to
+[Extensible Code Contracts for Scala](https://ethz.ch/content/dam/ethz/special-interest/infk/chair-program-method/pm/documents/Education/Theses/Rokas_Matulis_MA_report.pdf).
 
-To understand the difficulties of implementing post-conditions I refer to
-[Extensible Code Contracts for Scala](https://ethz.ch/content/dam/ethz/special-interest/infk/chair-program-method/pm/documents/Education/Theses/Rokas_Matulis_MA_report.pdf)).
+But why do post-conditions need history? Because a post-condition can refer to stuff *after* a state transition
+but also to stuff *before* a transition: they have access to *historical* state.
 
+Of course, in Manikin we don't have this problem because it is easy to refer to historical states with Worlds.
 Indeed, implementing post-conditions correctly is one of the main reasons why Manikin came into existence.
-In the last section of this post, we will show same example post-conditions.
+
+For now, we won't go deeper into the subject, but in the last section of this post, you'll find some example 
+post-conditions.
+
 #### The Whole Enchilada
-Now we are ready to present the final core types that make up Manikin (slightly abbreviated). 
-The core types are little bit more involved than the previous examples, but hopefully it will be clear why they have their 
+Given our discussion so far, we are hopefully ready to understand the (slightly abbreviated) core types that make up Manikin. 
+The core types are a bit more involved than the previous examples, but hopefully it will be clear why they have their 
 particular shape:
 ```scala
 trait Id[O] {
@@ -382,13 +388,13 @@ So that's it: the whole core of Manikin in 42 lines of code. And as you can see,
 (although it took me three years to make it *that* simple, with dozens of tries, improvements and failures).
 
 You may disagree that Manikin is simple. And yes, I've introduced some extra types, like `Pre` and `Msg`, and it 
-is not clear what they are for. Also, the World type looks very different from the previous version we discussed.
+is not immediately clear what they are for. Also, the World type looks very different from the previous version we discussed.
 
 #### Fluent Builder
-Let's unpack all the types to get a better understanding and start with the fluent builder that Manikin 
-provides to build `Msg` objects. 
+Let's unpack the types a bit to get a better understanding, starting with the fluent builder that is responsible for
+building `Msg` objects. 
 
-Let's say we want implement `LMessage`. As you can see we have to return a `Msg` object in method `local`. 
+Say we want implement `LMessage`. For that, we need to implement the `local` method which must return a `Msg` object.
 So how do we build one?
                                                                                     
 If you look closely at `Env`, you see it defines a `pre` method that takes a single function parameter. 
@@ -437,7 +443,7 @@ Now how cool is that?
 But why do we need a builder to implement the four stages of a Message? Can't we  just implement them with ordinary 
 methods?
 
-We could, but then we would end up like this:
+We could, but then it would end up like this:
 ```scala
 case class Deposit(amt: Double) extends AccountMsg {
   def pre = { amt > 0 }
@@ -446,7 +452,7 @@ case class Deposit(amt: Double) extends AccountMsg {
   def pst = { obj.balance = old.balance + amt }
 }
 ```
-Which looks pretty nice in Scala, but the alternative in Java would introduce a lot of extra boilerplate:
+Which looks pretty nice in Scala, but the alternative in Java would introduce extra boilerplate:
 ```java
 class Deposit implements AccountMsg {
   public final Double amount;
@@ -475,10 +481,10 @@ We have already tried out all these use-cases without needing to change a single
 Of course, business logic that was built 'the Manikin way'.
 #### Final Example
 We didn't complete finish our simple 'Bank' example. So for completeness’s sake I'm filling in the missing bits in the
-final example. 
+final example that ends this post. 
 
-In my next post I'm going to explain in more detail how we can use Worlds to apply advanced Version Control
-and Event Sourcing.
+In my next posts I'm going to explain in more detail how we can use Worlds to implement Version Control
+and Event Sourcing, and much more.
 
 
 ```scala
