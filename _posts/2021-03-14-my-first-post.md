@@ -9,7 +9,7 @@ identity and a well-defined lifecycle.
 That is why I prefer Scala, a programming language that elegantly marries both FP and Object Orientation.
 
 #### Place Oriented Programming
-However, there is one thing I dislike, and that's *shared* mutable state (and boilerplate).
+However, there is one thing I dislike, and that's *shared* mutable state (and boilerplate!).
 Most OO programs mutate state *in place* and that always gives me a lot of headaches.
 
 I'm not the only one who has a problem with mutable state:
@@ -51,7 +51,7 @@ Our first definition is that of an 'ordinary' object:
 An ordinary object has (mutable - in place) state and identity. Given the same identity or *id*, an object can be at 
 different states at different points in time, but its history is destroyed or not available.
 
-Consequently, we define a *Pure* Object to be an object that has *immutable* state and *immutable* identity with
+Consequently, Manikin defines a *Pure* Object to be an object that has *immutable* state and *immutable* identity with
 the optional capability that we do have (second-class) access to its history.
 
 To *type* a Pure Object, we first relate identity `Id[O]` and state `O` with the following trait:
@@ -88,10 +88,11 @@ def withdraw(ac: Account, amt: Double): Account = {
 }
 ```
 With the aid of case classes and copy constructors, it is very easy to create new immutable states in Scala.
-Not surprisingly, Kotlin's data classes provide exactly the same capability. 
+Not surprisingly, Kotlin's [Data Classes](https://kotlinlang.org/docs/data-classes.html) provide exactly the same
+capability. 
 
 Unfortunately, with Java it would require more boilerplate, 
-but we can achieve more-or-less the same result with [Project Lombok](https://projectlombok.org)
+but we can achieve more or less the same result with [Project Lombok](https://projectlombok.org)
 or with the newfangled Java 16 [Records](https://openjdk.java.net/jeps/395).
 
 #### Worlds
@@ -115,7 +116,7 @@ case class World(state: Map[Id[_], _]) {
   def put[O](id: Id[O], st: O): World = World(state = state + (id -> st))
 }
 ```
-So, every time you put a Pure Object into a World, it returns a new version of a World (containing that object).
+So, every time we put a Pure Object into a World, it returns a new version of a World (containing that object).
 To accommodate for Worlds, we also define the following 'Wordly' transition functions:
 ```scala
 type AccountId = Id[Account]
@@ -132,7 +133,7 @@ def withdrawInWorld(w: World, id: AccountId, amt: Double): World = {
 ```
 #### Composite Objects
 Of course, things get more intricate when (composite) objects contain identifiers to other objects. 
-And indeed, implementing transition functions for such composite objects requires even more boilerplate, as we have
+And indeed, implementing transition functions for composite objects requires even more boilerplate, as we have
 to explicitly pass new versions of a World to the next stages of a composite transition. 
 
 Here is an example of a money transfer between two accounts:
@@ -214,10 +215,10 @@ def transfer(e: Environment, tid: TransferId): Unit = {
 }
 ```
 
-There is only one big caveat with this approach: Environments cannot be shared across different threads.
+But there is one big caveat with this approach: Environments cannot be shared across different threads.
 They should also not 'escape' the (thread) 'context' where they are used.
 
-As we will see, both issues are addressed by Manikin's messaging and concurrency model.
+As we will see in later posts, both issues are addressed by Manikin's messaging and concurrency model.
 #### Messages
 We've already condensed our Account example into imperative code, while still managing our
 Objects to remain pure. What's still missing in our approach is another important OO concept, and that's behaviour:
@@ -274,13 +275,13 @@ What's still annoying is that an Environment needs to be passed as a parameter t
 To remove that, we temporarily store and retrieve the 'current' Environment parameter in a global,
 mutable *ThreadLocal* variable. The result is that a LocalMessage is both a Message *and* an Environment.
                                                  
-You may feel this 'global variable' solution is bad style: if so, you are always free to extend Message2 if you don't 
-want anything to do with ThreadLocal (at the expense of more boilerplate).
+You may feel this 'global variable' solution is bad style. No worries, you are always free to extend Message2 if you
+don't want anything to do with ThreadLocal (at the expense of more boilerplate).
 
 ```scala
 val tenv = ThreadLocal[_]
 
-trait LocalMessage3[O, R] extends Environment2[O] {
+trait LocalMessage2[O, R] extends Environment2[O] {
   protected def env = tenv.get.asInstanceOf[Environment[O, R]]
   
   def self: Id[O] = env.self
@@ -293,7 +294,7 @@ trait LocalMessage3[O, R] extends Environment2[O] {
   def effect: R
 }
 
-case class Deposit3(amt: Double) extends LocalMessage3[Account, Unit] {
+case class Deposit3(amt: Double) extends LocalMessage2[Account, Unit] {
   def preCondition = amt > 0.0
   def apply = obj.copy(balance = obj.balance + amt)
   def effect = { }
@@ -308,28 +309,33 @@ transition is applied.
 But sometimes we also need to check whether a certain conditions holds *after* we do a transition
 (and after Messages have been sent to other objects in the effect stage).
 
-Post-conditions are very useful when you want to make sure that your program is always in consistent, validated and sane
-state. Unfortunately, there aren't many programming languages out there that have first-class post-conditions.
-The Eiffel programming language was one of the first that included them. Post-conditions can also be found in formal 
-specification languages, such as the Java Modeling Language (JML).
+Post-conditions are very useful when you want to make sure that your system is always in consistent, validated and sane
+state. 
+
+Unfortunately, there aren't many programming languages out there that have first-class post-conditions.
+The [Eiffel](https://www.eiffel.org/doc/eiffel/Eiffel) programming language was one of the first that included them. Post-conditions can also be found in formal 
+specification languages, such as the Java Modeling Language ([JML](https://en.wikipedia.org/wiki/Java_Modeling_Language)).
 
 So why are post-conditions not more widely used? A big challenge with their implementation is that they can reference 
 state *after* a state transition, but may also reference state *before* a transition: they have access to
 *historical* state.
 
-To understand the difficulties with implementing post-conditions I refer to [Extensible Code Contracts for Scala](https://ethz.ch/content/dam/ethz/special-interest/infk/chair-program-method/pm/documents/Education/Theses/Rokas_Matulis_MA_report.pdf)
-One reason why post-conditions are difficult to implement on top of mutable state where history is destroyed.
+I think to most important reason why post-conditions are difficult to implement on top of mutable state is exactly 
+because history is destroyed.
 Of course, with Manikin we don't have this problem because it is easy to refer to historical states with Worlds.
 
+To understand the difficulties of implementing post-conditions I refer to
+[Extensible Code Contracts for Scala](https://ethz.ch/content/dam/ethz/special-interest/infk/chair-program-method/pm/documents/Education/Theses/Rokas_Matulis_MA_report.pdf)).
+
 Indeed, implementing post-conditions correctly is one of the main reasons why Manikin came into existence.
-In the last section of this post, we will show an example post-conditions.
+In the last section of this post, we will show same example post-conditions.
 #### The Whole Enchilada
 Now we are ready to present the final core types that make up Manikin (slightly abbreviated). 
 The core types are little bit more involved than the previous examples, but hopefully it will be clear why they have their 
 particular shape:
 ```scala
 trait Id[O] {
-  init: O
+  def init: O
 }
 
 trait Pre[I <: Id[O], O, R] { def pre(pre: => Boolean): App[I, O, R] }
@@ -372,17 +378,17 @@ trait LMessage[I <: Id[O], O, R] extends Message[I, O, R] with Env[I, O, R] {
   def local: Msg[I, O, R]
 }
 ```
-So that's it: the whole core of Manikin in 42 lines of code. And as you can see, there is not much to it.
-(it did take me three years to make it *that* simple, with dozens of tries, improvements and failures).
+So that's it: the whole core of Manikin in 42 lines of code. And as you can see, there is not much to it 
+(although it took me three years to make it *that* simple, with dozens of tries, improvements and failures).
 
-You may disagree that Manikin is simple. And yes, I've introduced some extra types, like `Pre` and `Msg`, where it 
-is not clear what they are for. Also, the World type look very different from the previous version we discussed.
+You may disagree that Manikin is simple. And yes, I've introduced some extra types, like `Pre` and `Msg`, and it 
+is not clear what they are for. Also, the World type looks very different from the previous version we discussed.
 
 #### Fluent Builder
 Let's unpack all the types to get a better understanding and start with the fluent builder that Manikin 
 provides to build `Msg` objects. 
 
-Let's say we want implement `LMessage`. As you can see we have to return a `Msg` object for method `local`. 
+Let's say we want implement `LMessage`. As you can see we have to return a `Msg` object in method `local`. 
 So how do we build one?
                                                                                     
 If you look closely at `Env`, you see it defines a `pre` method that takes a single function parameter. 
@@ -421,8 +427,17 @@ case class Book(from: AccountId, to: AccountId, amt: Double) extends TransferMsg
     }
 }
 ```
-So why do we need a builder to implement the four stages of a Message? Can't we  just implement them with ordinary 
-methods? We could, but then we would end up like this:
+Also take a note on the post conditions, especially the Book post condition. There we state:
+
+> After we Book a Transfer, the sum balance of both Accounts should stay the same.
+
+Now how cool is that?                                                                                 
+          
+#### Alternatives
+But why do we need a builder to implement the four stages of a Message? Can't we  just implement them with ordinary 
+methods?
+
+We could, but then we would end up like this:
 ```scala
 case class Deposit(amt: Double) extends AccountMsg {
   def pre = { amt > 0 }
@@ -431,7 +446,7 @@ case class Deposit(amt: Double) extends AccountMsg {
   def pst = { obj.balance = old.balance + amt }
 }
 ```
-Which looks pretty nice in Scala, but if we translate that to Java, it would introduce a lot of extra boilerplate:
+Which looks pretty nice in Scala, but the alternative in Java would introduce a lot of extra boilerplate:
 ```java
 class Deposit implements AccountMsg {
   public final Double amount;
@@ -444,7 +459,7 @@ class Deposit implements AccountMsg {
 }
 ```
 #### Alternative Worlds
-Now that have all the pieces of the puzzle, we can finally leverage the real value that Manikin brings: the alternative
+Now that we have all the pieces of the puzzle, we can finally leverage the real value that Manikin brings: the alternative
 Worlds that can plugged in to implement all kinds of interesting (infrastructural) behaviour. 
 
 Most importantly, behaviour that is *independent* of your business logic, for example:
@@ -458,8 +473,47 @@ Most importantly, behaviour that is *independent* of your business logic, for ex
 
 We have already tried out all these use-cases without needing to change a single line of business logic. 
 Of course, business logic that was built 'the Manikin way'.
-
 #### Final Example
+We didn't complete finish our simple 'Bank' example. So for completeness’s sake I'm filling in the missing bits in the
+final example. 
+
+In my next post I'm going to explain in more detail how we can use Worlds to apply advanced Version Control
+and Event Sourcing.
+
+
+```scala
+case class AccountId(iban: String) extends Id[Account] {
+  def init = Account(0.0, 0.0)
+}
+
+case class TransactionId(id: Long) extends Id[Transaction] {
+  def init = Transfer(false, null, null, 0.0)
+}
+
+case class Open(init: Double) extends AccountMsg {
+  def local =
+    pre { init > 0.0 }.
+    app { obj.copy(obj.balance = init ) }.
+    eff { }.
+    pst { obj.balance = inint }
+}
+
+def main(arg: Array[String]) = {
+  val a1 = AccountId("A1")
+  val a2 = AccountId("A2")
+  val t1 = TransactionId(1)
+  
+  val world = new SimpleWorld()
+  
+  val nworld = world.
+          send(a1, Open(50.0)).
+          send(a2, Open(80.0)).
+          send(t1, Book(a1, a2, 30.0))
+  
+  println("a1: " + nworld.obj(a1).value) // Account(30.0)
+  println("a2: " + nworld.obj(a2).value) // Account(110.0)
+}
+```
 
 
 
