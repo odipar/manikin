@@ -1,4 +1,11 @@
-theme: jekyll-theme-slate
 title: Manikin
-description: A blog
+description:
 baseurl: /manikin
+
+markdown: kramdown
+theme: minima
+plugins:
+  - jekyll-feed
+minima:
+  skin: classic
+
