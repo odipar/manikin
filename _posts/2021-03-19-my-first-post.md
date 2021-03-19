@@ -521,7 +521,7 @@ def main(arg: Array[String]) = {
           send(a2, Open(80.0)).
           send(t1, Book(a1, a2, 30.0))
   
-  println("a1: " + nworld.obj(a1).value) // Account(30.0)
+  println("a1: " + nworld.obj(a1).value) // Account(20.0)
   println("a2: " + nworld.obj(a2).value) // Account(110.0)
 }
 ```
