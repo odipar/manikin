@@ -371,8 +371,8 @@ trait Env[I <: Id[O], O, R] extends Pre[I, O, R] {
 }
 
 trait World[W <: World[W]] {
-  def old[O](id: Id[O]): WorldValue[W, O]
-  def obj[O](id: Id[O]): WorldValue[W, O]
+  def old[O](id: Id[_ <: O]): WorldValue[W, O]
+  def obj[O](id: Id[_ <: O]): WorldValue[W, O]
   def send[I <: Id[O], O, R](id: I, msg: Message[I, O, R]): WorldValue[W, R]
 }
 
@@ -507,7 +507,7 @@ case class Open(init: Double) extends AccountMsg {
     pre { init > 0.0 }.
     app { obj.copy(obj.balance = init ) }.
     eff { }.
-    pst { obj.balance = inint }
+    pst { obj.balance = init }
 }
 
 def main(arg: Array[String]) = {
@@ -518,10 +518,10 @@ def main(arg: Array[String]) = {
   val world = new SimpleWorld()
   
   val nworld = world.
-          send(a1, Open(50.0)).
-          send(a2, Open(80.0)).
-          send(t1, Book(a1, a2, 30.0)).
-          world
+    send(a1, Open(50.0)).
+    send(a2, Open(80.0)).
+    send(t1, Book(a1, a2, 30.0)).
+    world
   
   println("a1: " + nworld.obj(a1).value) // Account(20.0)
   println("a2: " + nworld.obj(a2).value) // Account(110.0)

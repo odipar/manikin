@@ -176,7 +176,7 @@ SENT Withdraw(30.0) => AccountId(A1):1
 As you can see, the EventWorld has captured all messages that have been sent and 'turned' them into events. 
 Next to that, it also tracked all the *reads* that were issued in the pre- and post-conditions.
 
-Also notice the versions numbers that are post-fixed to each account id. All this tracking and tracing happens in 
+Also notice the version numbers that are post-fixed to each account id. All this tracking and tracing happens in 
 Manikin's 'backend'. Exactly because Manikin stores a full record of what happened, it is able to efficiently compare, 
 merge and rebase concurrent state.
                  
