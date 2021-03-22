@@ -201,7 +201,7 @@ case class Book(from: AccountId, to: AccountId, amount: Double) extends Transfer
    def scala = 
       pre { from != to }.
       app { }.
-      eff { send(from, Deposit(amount)); send(to, Withdraw(amount)) }.
+      eff { send(from, Withdraw(amount)); send(to, Deposit(amount)) }.
       pst { obj(from).balance + obj(to).balance == old(from).balance + old(to).balance }
 }
 ```

@@ -62,7 +62,7 @@ trait Id[O] {
   def init: O
 }
 ```
-(note that `Id[O]` is also factory for the pristine or initial state `O`).
+(note that `Id[O]` is also a factory for the pristine or initial state `O`).
 
 Then, we type a Pure Object to be a single *pair* or *mapping* from `Id[O]` to `O`:
 ```scala
